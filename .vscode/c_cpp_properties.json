@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "LEVELDB_DB_PATH=\"/pmem-fs/leveldb\"",
+                "FPTREE_DB_PATH=\"/pmem-fs/fptree\"",
+                "PROJECT_ROOT=\"\""
+            ],
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/googletest/googletest/include"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 4
+}
