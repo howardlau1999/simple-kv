@@ -32,8 +32,9 @@ void Poller::update(int operation, Channel* channel) {
     bzero(&event, sizeof(event));
     event.data.ptr = channel;
     event.events = channel->getEvents();
-    if (::epoll_ctl(pollfd, operation, channel->getFd(), &event)) {
-        std::cerr << "epoll_ctl error: " << operation << std::endl;
+    int ret = 0;
+    if (ret = ::epoll_ctl(pollfd, operation, channel->getFd(), &event)) {
+        std::cerr << "epoll_ctl error: " << channel->getFd() << " " << ret << std::endl;
     }
 }
 

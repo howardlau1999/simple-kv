@@ -1,11 +1,11 @@
 #ifndef _EVENTLOOP_H_
 #define _EVENTLOOP_H_
-
-#include <channel.h>
-#include <poller.h>
 #include <memory>
+#include <functional>
+#include <vector>
+class Channel;
+class Poller;
 class EventLoop {
-
 public:
     EventLoop();
     ~EventLoop();

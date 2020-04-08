@@ -1,7 +1,6 @@
 #ifndef _NETWORKING_H_
 #define _NETWORKING_H_
 
-#define _GNU_SOURCE
 #include <arpa/inet.h>
 #include <errno.h>
 #include <error.h>

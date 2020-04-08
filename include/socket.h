@@ -7,9 +7,9 @@ class Socket : public noncopyable {
 
    public:
     int accept(struct sockaddr_in6 *clientAddr);
-    int Socket::accept(struct sockaddr_in6 *clientAddr);
-    void Socket::bindAddress(const struct sockaddr* addr);
-    void Socket::listen();
+    void bindAddress(const struct sockaddr* addr);
+    void listen();
     int getFd() const { return fd; }
     explicit Socket(int fd) : fd(fd) {}
+    ~Socket();
 };

@@ -2,7 +2,7 @@
 #define _POLLER_H_
 #include <channel.h>
 #include <networking.h>
-
+#include <eventloop.h>
 #include <vector>
 #include <unordered_map>
 class Poller {

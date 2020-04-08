@@ -1,4 +1,11 @@
 #include <eventloop.h>
+#include <poller.h>
+#include <channel.h>
+#include <vector>
+
+EventLoop::EventLoop() : poller(new Poller(this)) {
+    
+}
 
 void EventLoop::updateChannel(Channel* channel) {
     poller->updateChannel(channel);
