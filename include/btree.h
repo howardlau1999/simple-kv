@@ -22,11 +22,6 @@ struct Value {
     }
 };
 
-enum Status {
-    OK,
-    NOT_FOUND,
-};
-
 struct KeyValue {
     Key key;
     Value value;

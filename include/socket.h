@@ -1,3 +1,5 @@
+#ifndef _SOCKET_H_
+#define _SOCKET_H_
 #include <networking.h>
 #include <noncopyable.h>
 
@@ -13,3 +15,4 @@ class Socket : public noncopyable {
     explicit Socket(int fd) : fd(fd) {}
     ~Socket();
 };
+#endif

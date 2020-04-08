@@ -9,11 +9,14 @@ void Channel::handleEvent() {
     if (revents & (EPOLLERR)) {
         if (errorCallback) errorCallback();
     }
-    if (revents & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
-        if (readCallback) readCallback();
-    }
+
     if (revents & EPOLLOUT) {
         if (writeCallback) writeCallback();
     }
+
+    if (revents & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
+        if (readCallback) readCallback();
+    }
+
     handlingEvent = false;
 }

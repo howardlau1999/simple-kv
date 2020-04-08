@@ -305,7 +305,7 @@ Key InnerNode::getKey(size_t idx) {
     if (idx < this->n) {
         return this->keys[idx];
     } else {
-        return NOT_FOUND;
+        return 0;
     }
 }
 
