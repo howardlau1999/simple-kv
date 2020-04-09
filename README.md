@@ -45,3 +45,9 @@ ERROR, // S->C, Something went wrong
 ```
 
 For different types of message, the length of the data followed varies. 
+
+# Possible Improvements
+
+1. Use multi-threading
+2. Client uses epoll as well
+3. Persistent storage
