@@ -21,6 +21,7 @@ struct Value {
         memmove(bytes, value.bytes, sizeof(bytes));
     }
     Value() = default;
+    Value(Byte bytes[256]) { memmove(this->bytes, bytes, sizeof(bytes)); }
     Value(Value const& value) { memmove(bytes, value.bytes, sizeof(bytes)); }
 };
 
@@ -235,9 +236,7 @@ class Iterator {
         : curNode(node), curSlot(slot) {}
 
     KeyValue getKV() { return this->curNode->kvs[curSlot]; }
-    bool isValid() {
-        return this->curNode && this->curSlot < this->curNode->n;
-    }
+    bool isValid() { return this->curNode && this->curSlot < this->curNode->n; }
     bool hasNext() {
         if (!curNode) return false;
         if (curSlot + 1 >= curNode->n) {

@@ -1,6 +1,6 @@
-#include <networking.h>
+#include <btree.h>
 #include <command.h>
-
+#include <networking.h>
 void recv_n(int fd, char *buf, const int size) {
     int received = 0;
     while (received < size) {
@@ -10,6 +10,19 @@ void recv_n(int fd, char *buf, const int size) {
             return;
         }
         received += chunk;
+        buf += chunk;
+    }
+}
+
+void send_n(int fd, const char *buf, const int size) {
+    int sent = 0;
+    while (sent < size) {
+        int chunk = send(fd, buf, size - sent, 0);
+        if (chunk == -1) {
+            perror("send");
+            return;
+        }
+        sent += chunk;
         buf += chunk;
     }
 }
@@ -54,18 +67,39 @@ int connect_to(const char *host, const char *port) {
     return fd;
 }
 
-int main(int argc, char* argv[]) {
+Value Get(int connfd, Key key) {
+    char getCommand[9] = {GET};
+    memcpy(getCommand + 1, &key, 8);
+    send_n(connfd, getCommand, sizeof getCommand);
+    char reply[257] = {0};
+    recv_n(connfd, reply, sizeof reply);
+    Value value;
+    memcpy(value.bytes, reply + 1, 256);
+    return value;
+}
+
+bool Delete(int connfd, Key key) {
+    char deleteCommand[9] = {DELETE};
+    memcpy(deleteCommand + 1, &key, 8);
+    send_n(connfd, deleteCommand, sizeof deleteCommand);
+    char reply;
+    recv_n(connfd, &reply, 1);
+    return reply == OK;
+}
+
+
+bool Put(int connfd, Key key, Value value) {
+    char putCommand[265] = {PUT};
+    memcpy(putCommand + 1, &key, 8);
+    memcpy(putCommand + 9, value.bytes, 256);
+    send_n(connfd, putCommand, sizeof putCommand);
+    char reply;
+    recv_n(connfd, &reply, 1);
+    return reply == OK;
+}
+
+int main(int argc, char *argv[]) {
     int connfd = connect_to(argv[1], argv[2]);
-    char putTest[265] = {1, 1, 0, 0, 0, 0, 0, 0, 0, 't', 'e', 's', 't'};
-    send(connfd, putTest, 265, 0);
-    char replyOK[1] = {0};
-    recv_n(connfd, replyOK, 1);
-    printf("%s\n", replyOK[0] == OK ? "PUT OK" : "PUT ERROR");
-    char getTest[9] = {0, 1, 0, 0, 0, 0, 0, 0, 0};
-    send(connfd, getTest, 9, 0);
-    char replyValue[257] = {0};
-    recv_n(connfd, replyValue, 257);
-    printf("%s", replyValue[0] == VALUE ? "GET VALUE: " : "GET ERROR!");
-    printf("%s", replyValue + 1);
-    close(connfd); 
+    
+    close(connfd);
 }
