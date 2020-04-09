@@ -1,5 +1,22 @@
 #include <networking.h>
 #include <iostream>
+
+int get_in_port(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) {
+        return (((struct sockaddr_in *)sa)->sin_port);
+    }
+
+    return (((struct sockaddr_in6 *)sa)->sin6_port);
+}
+
+void *get_in_addr(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in *)sa)->sin_addr);
+    }
+
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
+
 const struct sockaddr* sockets::sockaddr_cast(const struct sockaddr_in6* addr) {
     return static_cast<const struct sockaddr*>(
         reinterpret_cast<const void*>(addr));

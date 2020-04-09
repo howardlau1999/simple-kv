@@ -3,12 +3,13 @@
 #include <string>
 #include <vector>
 
-enum Operation {
+enum Operation : char {
     GET,
     PUT,
     DELETE,
     SCAN,
     KV,
+    VALUE,
     NO_MORE,
     PING,
     PONG,
@@ -17,6 +18,7 @@ enum Operation {
 };
 
 class Command {
+public:
     Operation op;
     std::vector<std::vector<char>> args;
 };

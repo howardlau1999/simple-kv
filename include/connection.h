@@ -9,17 +9,6 @@
 
 #include <deque>
 class Connection : public std::enable_shared_from_this<Connection> {
-    int sockfd;
-    int connid;
-    bool isProcessing;
-    EventLoop* loop;
-    std::vector<char> inputBuffer;
-    std::vector<char> outputBuffer;
-    std::deque<Command> commands;
-    Command currentCommand;
-    std::unique_ptr<Socket> socket;
-    std::unique_ptr<Channel> channel;
-
    public:
     Connection(EventLoop* loop, BTree* tree, int sockfd, int connid);
     int getFd() { return sockfd; };
@@ -44,7 +33,18 @@ class Connection : public std::enable_shared_from_this<Connection> {
         this->channel->disableAll();
         this->channel->remove();
     }
+    bool isProcessing;
+    Command currentCommand;
 
+   private:
+    int sockfd;
+    int connid;
+    EventLoop* loop;
+    std::vector<char> inputBuffer;
+    std::vector<char> outputBuffer;
+    std::deque<Command> commands;
+    std::unique_ptr<Socket> socket;
+    std::unique_ptr<Channel> channel;
     MessageCallback messageCallback;
     CloseCallback closeCallback;
 };

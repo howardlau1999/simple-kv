@@ -62,4 +62,8 @@ struct sockaddr_in6 getPeerAddr(int sockfd);
 bool isSelfConnect(int sockfd);
 }
 
+
+int get_in_port(struct sockaddr *sa);
+void *get_in_addr(struct sockaddr *sa);
+
 #endif

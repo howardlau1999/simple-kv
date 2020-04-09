@@ -1,26 +1,76 @@
 #include <acceptor.h>
 #include <btree.h>
+#include <command.h>
 #include <connection.h>
 #include <networking.h>
+
 #include <unordered_map>
-int get_in_port(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
-        return (((struct sockaddr_in *)sa)->sin_port);
+BTree *tree;
+
+void onMessage(std::shared_ptr<Connection> conn) {
+    auto &inputBuffer = conn->getInputBuffer();
+    int processedBytes = -1;
+    while (inputBuffer.size() >= 1 && processedBytes != 0) {
+        processedBytes = 0;
+        if (conn->isProcessing) {
+            switch (conn->currentCommand.op) {
+                case GET:
+                    if (inputBuffer.size() >= 8) {
+                        Key key;
+                        std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
+                                  (char *)&key);
+                        Value v = tree->find(key);
+                        int value = Operation::VALUE;
+                        conn->send(&value, 1);
+                        conn->send(v.bytes, 256);
+                        conn->isProcessing = false;
+                        processedBytes = 8;
+                    }
+                    break;
+                case DELETE:
+                    if (inputBuffer.size() >= 8) {
+                        Key key;
+                        std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
+                                  (char *)&key);
+                        tree->remove(key);
+                        int ok = Operation::OK;
+                        conn->send(&ok, 1);
+                        conn->isProcessing = false;
+                        processedBytes = 8;
+                    }
+                    break;
+                case PUT:
+                    if (inputBuffer.size() >= 264) {
+                        Key key;
+                        Value value;
+                        std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
+                                  (char *)&(key));
+                        std::copy(inputBuffer.begin() + 8,
+                                  inputBuffer.begin() + 264, value.bytes);
+                        tree->insert(key, value);
+                        int ok = Operation::OK;
+                        conn->send(&ok, 1);
+                        conn->isProcessing = false;
+                        processedBytes = 264;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            conn->currentCommand.op = static_cast<Operation>(inputBuffer[0]);
+            conn->isProcessing = true;
+            processedBytes = 1;
+        }
+        if (processedBytes > 0)
+            std::vector<char>(inputBuffer.begin() + processedBytes,
+                              inputBuffer.end())
+                .swap(inputBuffer);
     }
-
-    return (((struct sockaddr_in6 *)sa)->sin6_port);
-}
-
-void *get_in_addr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in *)sa)->sin_addr);
-    }
-
-    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
 int main(int argc, char *argv[]) {
-    BTree *tree = new BTree(1024);
+    tree = new BTree(1024);
     struct addrinfo hints, *servinfo, *p;
     EventLoop *loop = new EventLoop();
     Acceptor *acceptor;
@@ -46,29 +96,28 @@ int main(int argc, char *argv[]) {
 
     freeaddrinfo(servinfo);
     acceptor->listen();
-    acceptor->setNewConnectionCallback(
-        [loop, tree, &connid, &connections](int connfd, struct sockaddr_storage clientAddr) {
-            char s[INET6_ADDRSTRLEN] = {0};
-            char str[] = "Hello!\n";
-            inet_ntop(clientAddr.ss_family,
-                      get_in_addr((struct sockaddr *)&clientAddr), s, sizeof s);
-            printf("server: accepted connection %d from %s:%d\n", connid, s,
-                   get_in_port((struct sockaddr *)&clientAddr));
-            std::shared_ptr<Connection> conn(new Connection(loop, tree, connfd, connid));
-            connections[connid++] = conn;
-            conn->connectionEstablished();
-            conn->send(str, sizeof(str));
-            conn->setMessageCallback([](std::shared_ptr<Connection> conn) {
-                auto& buffer = conn->getInputBuffer();
-                std::string str(buffer.begin(), buffer.end());
-                buffer.clear();
-                std::cout << "server: conn " << conn->getConnId() << " : " << str;
-            });
-            conn->setCloseCallback([loop, &connections](std::shared_ptr<Connection> conn) {
-                connections.erase(conn->getConnId());
-                loop->runInLoop(std::bind(&Connection::connectionDestroyed, conn));
-                std::cout << "server: connection id " << conn->getConnId() << " closed" << std::endl;
-            });
+    acceptor->setNewConnectionCallback([loop, tree, &connid, &connections](
+                                           int connfd,
+                                           struct sockaddr_storage clientAddr) {
+        char s[INET6_ADDRSTRLEN] = {0};
+        char str[] = "Hello!\n";
+        inet_ntop(clientAddr.ss_family,
+                  get_in_addr((struct sockaddr *)&clientAddr), s, sizeof s);
+        printf("server: accepted connection %d from %s:%d\n", connid, s,
+               get_in_port((struct sockaddr *)&clientAddr));
+        std::shared_ptr<Connection> conn(
+            new Connection(loop, tree, connfd, connid));
+        connections[connid++] = conn;
+        conn->connectionEstablished();
+        conn->setMessageCallback(onMessage);
+        conn->setCloseCallback([loop, &connections](
+                                   std::shared_ptr<Connection> conn) {
+            connections.erase(conn->getConnId());
+            loop->runInLoop(std::bind(&Connection::connectionDestroyed, conn));
+            std::cout << "server: connection id " << conn->getConnId()
+                      << " closed" << std::endl;
         });
+    });
     loop->loop();
+    delete tree;
 }
