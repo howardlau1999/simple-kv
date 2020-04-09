@@ -17,14 +17,20 @@ void onMessage(std::shared_ptr<Connection> conn) {
                 case GET:
                     if (inputBuffer.size() >= 8) {
                         Key key;
+                        Value value;
                         std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
                                   (char *)&key);
-                        Value v = tree->find(key);
-                        int value = Operation::VALUE;
-                        conn->send(&value, 1);
-                        conn->send(v.bytes, 256);
-                        conn->isProcessing = false;
+                        Status status = tree->find(key, value);
+                        if (status == FAILED) {
+                            int ret = Operation::NOT_FOUND;
+                            conn->send(&ret, 1);
+                        } else {
+                            int ret = Operation::VALUE;
+                            conn->send(&ret, 1);
+                            conn->send(value.bytes, 256);
+                        }
                         processedBytes = 8;
+                        conn->isProcessing = false;
                     }
                     break;
                 case DELETE:

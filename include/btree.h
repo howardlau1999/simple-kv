@@ -15,6 +15,13 @@
 
 typedef u_char Byte;
 typedef uint64_t Key;
+
+enum Status {
+    FOUND,
+    SUCCESS,
+    FAILED,
+};
+
 struct Value {
     Byte bytes[256];
     Value& operator=(Value const& value) {
@@ -118,7 +125,7 @@ class Node {
      * \param k the key whose value is to be identified.
      * \return the related value, MAX_VALUE if the key cannot be found
      */
-    virtual Value find(const Key& k) const = 0;
+    virtual Status find(const Key& k, Value& v) const = 0;
 
     /**
      * \brief find the minimum key inside this node.
@@ -166,7 +173,7 @@ class InnerNode : public Node {
     bool remove(const Key& k, int index, InnerNode* parent,
                 bool& ifDelete) override;
     bool update(const Key& k, const Value& v) override;
-    Value find(const Key& k) const override;
+    Status find(const Key& k, Value& v) const override;
     Key getMinKey() const override;
 
     KeyNode split() override;
@@ -207,7 +214,7 @@ class LeafNode : public Node {
     bool update(const Key& k, const Value& v) override;
     bool remove(const Key& k, int index, InnerNode* parent,
                 bool& ifDelete) override;
-    Value find(const Key& k) const override;
+    Status find(const Key& k, Value& v) const override;
     int findIndex(const Key& k) const;
     Key getMinKey() const override;
     Iterator seek(Key const& key) const override;
@@ -271,7 +278,7 @@ class BTree {
     bool remove(Key const& k);
     bool update(Key const& k, Value const& v);
     Iterator seek(Key const& k);
-    Value find(Key const& k);
+    Status find(Key const& k, Value& v);
     LeafNode* findLeaf(Key const& K);
 
     InnerNode* getRoot();                 // get the root node of the tree

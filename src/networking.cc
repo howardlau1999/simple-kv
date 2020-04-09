@@ -69,13 +69,8 @@ void sockets::listenOrDie(int sockfd) {
 
 int sockets::accept(int sockfd, struct sockaddr_in6* addr) {
     socklen_t addrlen = static_cast<socklen_t>(sizeof *addr);
-#if VALGRIND || defined(NO_ACCEPT4)
-    int connfd = ::accept(sockfd, sockaddr_cast(addr), &addrlen);
-    setNonBlockAndCloseOnExec(connfd);
-#else
     int connfd = ::accept4(sockfd, sockaddr_cast(addr), &addrlen,
                            SOCK_NONBLOCK | SOCK_CLOEXEC);
-#endif
     if (connfd < 0) {
         int savedErrno = errno;
         std::cerr << "sockets::accept";

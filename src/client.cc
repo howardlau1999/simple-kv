@@ -1,8 +1,9 @@
 #include <btree.h>
 #include <command.h>
 #include <networking.h>
-#include <string>
+
 #include <iostream>
+#include <string>
 void recv_n(int fd, char *buf, const int size) {
     int received = 0;
     while (received < size) {
@@ -69,15 +70,18 @@ int connect_to(const char *host, const char *port) {
     return fd;
 }
 
-Value Get(int connfd, Key key) {
+Status Get(int connfd, Key const &key, Value &value) {
     char getCommand[9] = {GET};
     memcpy(getCommand + 1, &key, 8);
     send_n(connfd, getCommand, sizeof getCommand);
-    char reply[257] = {0};
-    recv_n(connfd, reply, sizeof reply);
-    Value value;
-    memcpy(value.bytes, reply + 1, 256);
-    return value;
+    char retVal;
+    recv_n(connfd, &retVal, 1);
+    if (retVal == VALUE) {
+        recv_n(connfd, (char *)value.bytes, 256);
+        return FOUND;
+    } else {
+        return FAILED;
+    }
 }
 
 bool Delete(int connfd, Key key) {
@@ -88,7 +92,6 @@ bool Delete(int connfd, Key key) {
     recv_n(connfd, &reply, 1);
     return reply == OK;
 }
-
 
 bool Put(int connfd, Key key, Value value) {
     char putCommand[265] = {PUT};
@@ -108,8 +111,18 @@ int main(int argc, char *argv[]) {
         memcpy(value, valueStr.c_str(), valueStr.size() + 1);
         Put(connfd, i, value);
     }
+    Delete(connfd, 4);
+    Delete(connfd, 15);
+    Delete(connfd, 14);
+    Delete(connfd, 3);
+    Byte value[256] = {'m', 'o', 'd', 'i', 'f', 'i', 'e' ,'d', '\0'};
+    Put(connfd, 99, value);
     for (int i = 1; i < 100; ++i) {
-        std::cout << Get(connfd, i).bytes << std::endl;
+        Value value;
+        if (Get(connfd, i, value) == FOUND)
+            std::cout << value.bytes << std::endl;
+        else
+            std::cout << "Key " << i << " not found!" << std::endl;
     }
     close(connfd);
 }

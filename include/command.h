@@ -11,6 +11,7 @@ enum Operation : char {
     KV, // S->C, returns a KV pair, followed by a 8-byte KEY and 256-byte VALUE
     VALUE, // S->C, simply a VALUE, followed by a 256-byte VALUE
     NO_MORE, // S->C, means there will be no more KV pairs, no data will follow
+    NOT_FOUND,
     OK, // S->C, Operation went well, no data will follow
     ERROR, // S->C, Something went wrong, a 256-byte string of error message
 };

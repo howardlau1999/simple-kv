@@ -285,10 +285,10 @@ bool InnerNode::update(Key const& key, Value const& value) {
 }
 
 // find the target value with the search key, return MAX_VALUE if it fails.
-Value InnerNode::find(Key const& key) const {
+Status InnerNode::find(Key const& key, Value& value) const {
     Iterator it = this->seek(key);
-    if (!it.isValid()) return Value();
-    else return it.getKV().value;
+    if (!it.isValid()) return FAILED;
+    else value = it.getKV().value;
 }
 
 Key InnerNode::getMinKey() const {
@@ -427,10 +427,10 @@ int LeafNode::findIndex(Key const& key) const {
 }
 
 // if the entry can not be found, return the max Value
-Value LeafNode::find(Key const& key) const {
+Status LeafNode::find(Key const& key, Value& value) const {
     Iterator it = this->seek(key);
-    if (!it.isValid()) return Value();
-    else return it.getKV().value;
+    if (!it.isValid()) return FAILED;
+    else value = it.getKV().value;
 }
 
 Iterator InnerNode::seek(Key const& key) const {
@@ -510,11 +510,11 @@ bool BTree::update(Key const& k, Value const& v) {
     return false;
 }
 
-Value BTree::find(Key const& key) {
+Status BTree::find(Key const& key, Value& value) {
     if (root != NULL) {
-        return root->find(key);
+        return root->find(key, value);
     }
-    return Value();
+    return FAILED;
 }
 
 // call the InnerNode and LeafNode print func to print the whole tree
