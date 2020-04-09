@@ -21,7 +21,7 @@ struct Value {
         memmove(bytes, value.bytes, sizeof(bytes));
     }
     Value() = default;
-    Value(Byte bytes[256]) { memmove(this->bytes, bytes, sizeof(bytes)); }
+    Value(Byte bytes[256]) { memmove(this->bytes, bytes, 256); }
     Value(Value const& value) { memmove(bytes, value.bytes, sizeof(bytes)); }
 };
 

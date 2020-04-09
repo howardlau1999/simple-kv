@@ -1,6 +1,8 @@
 #include <btree.h>
 #include <command.h>
 #include <networking.h>
+#include <string>
+#include <iostream>
 void recv_n(int fd, char *buf, const int size) {
     int received = 0;
     while (received < size) {
@@ -100,6 +102,14 @@ bool Put(int connfd, Key key, Value value) {
 
 int main(int argc, char *argv[]) {
     int connfd = connect_to(argv[1], argv[2]);
-    
+    for (int i = 1; i < 100; ++i) {
+        std::string valueStr = std::to_string(i * 10);
+        Byte value[256] = {0};
+        memcpy(value, valueStr.c_str(), valueStr.size() + 1);
+        Put(connfd, i, value);
+    }
+    for (int i = 1; i < 100; ++i) {
+        std::cout << Get(connfd, i).bytes << std::endl;
+    }
     close(connfd);
 }
