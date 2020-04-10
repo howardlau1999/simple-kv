@@ -13,6 +13,9 @@
 #define LEAF_DEGREE 5
 #define INNER_DEGREE 4096
 
+const size_t KEY_LEN = 8;
+const size_t VALUE_LEN = 256;
+
 typedef u_char Byte;
 typedef uint64_t Key;
 
@@ -23,13 +26,20 @@ enum Status {
 };
 
 struct Value {
-    Byte bytes[256];
+    Byte bytes[VALUE_LEN];
     Value& operator=(Value const& value) {
         memmove(bytes, value.bytes, sizeof(bytes));
     }
-    Value() = default;
-    Value(Byte bytes[256]) { memmove(this->bytes, bytes, 256); }
-    Value(Value const& value) { memmove(bytes, value.bytes, sizeof(bytes)); }
+    Value() { bzero(bytes, VALUE_LEN); };
+    Value(const char* str) {
+        bzero(bytes, VALUE_LEN);
+        memmove(this->bytes, str, std::min(strnlen(str, VALUE_LEN), (size_t)VALUE_LEN));
+    }
+    Value(Byte bytes[VALUE_LEN]) { memmove(this->bytes, bytes, VALUE_LEN); }
+    Value(Value const& value) { memmove(bytes, value.bytes, VALUE_LEN); }
+    bool operator==(Value const& other) const {
+        return memcmp(bytes, other.bytes, VALUE_LEN) == 0;
+    }
 };
 
 struct KeyValue {
