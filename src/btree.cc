@@ -300,7 +300,7 @@ bool InnerNode::update(Key const& key, Value const& value) {
 // find the target value with the search key, return MAX_VALUE if it fails.
 Status InnerNode::find(Key const& key, Value& value) const {
     Iterator it = this->seek(key);
-    if (!it.isValid())
+    if (!it.isValid() || it.getKV().key != key)
         return FAILED;
     else {
         value = it.getKV().value;
@@ -431,6 +431,8 @@ bool LeafNode::update(Key const& key, Value const& value) {
     return true;
 }
 
+
+
 int LeafNode::findIndex(Key const& key) const {
     // Binary Search
     int pos = std::lower_bound(this->kvs, this->kvs + this->n, key) - this->kvs;
@@ -442,7 +444,7 @@ int LeafNode::findIndex(Key const& key) const {
 // if the entry can not be found, return the max Value
 Status LeafNode::find(Key const& key, Value& value) const {
     Iterator it = this->seek(key);
-    if (!it.isValid())
+    if (!it.isValid() || it.getKV().key != key)
         return FAILED;
     else {
         value = it.getKV().value;
@@ -450,18 +452,36 @@ Status LeafNode::find(Key const& key, Value& value) const {
     }
 }
 
+// Returns the Iterator NOT LESS THAN key
 Iterator InnerNode::seek(Key const& key) const {
+    // Find the corresponding next node
     int pos = findIndex(key) - 1;
-    if (pos < 0) return Iterator(nullptr, -1);
+    // The key is less than all of the keys, so return the first key
+    if (pos < 0) {
+        if (n > 0) {
+            return children[0]->seek(key);
+        } else {
+            return Iterator(nullptr, -1);
+        }
+    }
     return children[pos]->seek(key);
 }
 
+// Returns the Iterator NOT LESS THAN key
 Iterator LeafNode::seek(Key const& key) const {
-    int idx = findIndex(key);
-    if (idx == -1)
-        return Iterator(nullptr, -1);
-    else
+    // Find if there is a key equal to the key
+    int idx = std::lower_bound(this->kvs, this->kvs + this->n, key) - this->kvs;
+    if (idx == this->n) {
+        // The key is greater than all keys in this node, find in next node
+        if (!next) {
+            // The key is greater than all keys in the tree, return nothing
+            return Iterator(nullptr, -1);
+        } else {
+            return next->seek(key);
+        }
+    } else {
         return Iterator(this, idx);
+    }
 }
 
 Key LeafNode::getMinKey() const { return this->kvs[0].key; }

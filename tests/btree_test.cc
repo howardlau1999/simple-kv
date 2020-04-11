@@ -120,3 +120,20 @@ TEST(BTreeTest, InnerNodeMergeParentRight) {
     }
     EXPECT_EQ(tree->getRoot()->getChildNum(), 9);
 }
+
+TEST(BTreeTest, ScanFromExistingKey) {
+    BTree* tree = new BTree(3);
+    Value value = "test";
+    for (int i = 0; i < 10; ++i) {
+        tree->insert(i, value);
+        Value value1;
+        Status status = tree->find(i, value1);
+        EXPECT_EQ(status, FOUND);
+        EXPECT_EQ(value, value1);
+    }
+    int current = 0;
+    for (Iterator it = tree->seek(0); it.isValid() && it.getKV().key <= 9; it.next()) {
+        EXPECT_EQ(it.getKV().key, current);
+        ++current;
+    }
+}

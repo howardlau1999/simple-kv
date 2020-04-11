@@ -15,6 +15,7 @@
 
 const size_t KEY_LEN = 8;
 const size_t VALUE_LEN = 256;
+const size_t KV_LEN = KEY_LEN + VALUE_LEN;
 
 typedef u_char Byte;
 typedef uint64_t Key;

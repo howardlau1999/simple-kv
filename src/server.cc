@@ -14,8 +14,29 @@ void onMessage(std::shared_ptr<Connection> conn) {
         processedBytes = 0;
         if (conn->isProcessing) {
             switch (conn->currentCommand.op) {
+                case SCAN:
+                    if (inputBuffer.size() >= 2 * KEY_LEN) {
+                        Key key[2];
+                        std::copy(inputBuffer.begin(),
+                                  inputBuffer.begin() + 2 * KEY_LEN,
+                                  (char *)&key);
+                        for (Iterator it = tree->seek(key[0]);
+                             it.isValid() && it.getKV().key <= key[1];
+                             it.next()) {
+                            int ret = Operation::KV;
+                            conn->send(&ret, 1);
+                            KeyValue kv = it.getKV();
+                            conn->send(&(kv.key), KEY_LEN);
+                            conn->send(kv.value.bytes, VALUE_LEN);
+                        }
+                        int ret = Operation::NO_MORE;
+                        conn->send(&ret, 1);
+                        processedBytes = 2 * KEY_LEN;
+                        conn->isProcessing = false;
+                    }
+                    break;
                 case GET:
-                    if (inputBuffer.size() >= 8) {
+                    if (inputBuffer.size() >= KEY_LEN) {
                         Key key;
                         Value value;
                         std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
@@ -27,14 +48,14 @@ void onMessage(std::shared_ptr<Connection> conn) {
                         } else {
                             int ret = Operation::VALUE;
                             conn->send(&ret, 1);
-                            conn->send(value.bytes, 256);
+                            conn->send(value.bytes, VALUE_LEN);
                         }
-                        processedBytes = 8;
+                        processedBytes = KEY_LEN;
                         conn->isProcessing = false;
                     }
                     break;
                 case DELETE:
-                    if (inputBuffer.size() >= 8) {
+                    if (inputBuffer.size() >= KEY_LEN) {
                         Key key;
                         std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
                                   (char *)&key);
@@ -42,25 +63,28 @@ void onMessage(std::shared_ptr<Connection> conn) {
                         int ok = Operation::OK;
                         conn->send(&ok, 1);
                         conn->isProcessing = false;
-                        processedBytes = 8;
+                        processedBytes = KEY_LEN;
                     }
                     break;
                 case PUT:
-                    if (inputBuffer.size() >= 264) {
+                    if (inputBuffer.size() >= KV_LEN) {
                         Key key;
                         Value value;
-                        std::copy(inputBuffer.begin(), inputBuffer.begin() + 8,
+                        std::copy(inputBuffer.begin(),
+                                  inputBuffer.begin() + KEY_LEN,
                                   (char *)&(key));
-                        std::copy(inputBuffer.begin() + 8,
-                                  inputBuffer.begin() + 264, value.bytes);
+                        std::copy(inputBuffer.begin() + KEY_LEN,
+                                  inputBuffer.begin() + KV_LEN, value.bytes);
                         tree->insert(key, value);
                         int ok = Operation::OK;
                         conn->send(&ok, 1);
                         conn->isProcessing = false;
-                        processedBytes = 264;
+                        processedBytes = KV_LEN;
                     }
                     break;
                 default:
+                    std::cerr << "UNKNOWN COMMAND " << conn->currentCommand.op
+                              << std::endl;
                     break;
             }
         } else {

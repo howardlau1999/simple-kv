@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <functional>
 void recv_n(int fd, char *buf, const int size) {
     int received = 0;
     while (received < size) {
@@ -71,13 +72,13 @@ int connect_to(const char *host, const char *port) {
 }
 
 Status Get(int connfd, Key const &key, Value &value) {
-    char getCommand[9] = {GET};
-    memcpy(getCommand + 1, &key, 8);
+    char getCommand[1 + KEY_LEN] = {GET};
+    memcpy(getCommand + 1, &key, KEY_LEN);
     send_n(connfd, getCommand, sizeof getCommand);
     char retVal;
     recv_n(connfd, &retVal, 1);
     if (retVal == VALUE) {
-        recv_n(connfd, (char *)value.bytes, 256);
+        recv_n(connfd, (char *)value.bytes, VALUE_LEN);
         return FOUND;
     } else {
         return FAILED;
@@ -85,8 +86,8 @@ Status Get(int connfd, Key const &key, Value &value) {
 }
 
 bool Delete(int connfd, Key key) {
-    char deleteCommand[9] = {DELETE};
-    memcpy(deleteCommand + 1, &key, 8);
+    char deleteCommand[KEY_LEN + 1] = {DELETE};
+    memcpy(deleteCommand + 1, &key, KEY_LEN);
     send_n(connfd, deleteCommand, sizeof deleteCommand);
     char reply;
     recv_n(connfd, &reply, 1);
@@ -94,13 +95,33 @@ bool Delete(int connfd, Key key) {
 }
 
 bool Put(int connfd, Key key, Value value) {
-    char putCommand[265] = {PUT};
-    memcpy(putCommand + 1, &key, 8);
-    memcpy(putCommand + 9, value.bytes, 256);
+    char putCommand[KV_LEN + 1] = {PUT};
+    memcpy(putCommand + 1, &key, KEY_LEN);
+    memcpy(putCommand + 1 + KEY_LEN, value.bytes, VALUE_LEN);
     send_n(connfd, putCommand, sizeof putCommand);
     char reply;
     recv_n(connfd, &reply, 1);
     return reply == OK;
+}
+
+// Scan all the keys ranged from minKey to maxKey (both included)
+void Scan(int connfd, Key minKey, Key maxKey, std::function<void(KeyValue kv)> callback) {
+    char scanCommand[KEY_LEN * 2 + 1] = {SCAN};
+    memcpy(scanCommand + 1, &minKey, KEY_LEN);
+    memcpy(scanCommand + 1 + KEY_LEN, &maxKey, KEY_LEN);
+    send_n(connfd, scanCommand, sizeof scanCommand);
+    while (1) {
+        char reply;
+        recv_n(connfd, &reply, 1);
+        if (reply == NO_MORE || reply == ERROR) {
+            break;
+        } else {
+            KeyValue kv;
+            recv_n(connfd, (char*)&(kv.key), KEY_LEN);
+            recv_n(connfd, (char*)kv.value.bytes, VALUE_LEN);
+            callback(kv);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -124,5 +145,8 @@ int main(int argc, char *argv[]) {
         else
             std::cout << "Key " << i << " not found!" << std::endl;
     }
+    Scan(connfd, 3, 10, [](KeyValue kv) {
+        std::cout << "Scanning key " << kv.key << " value " << kv.value.bytes << std::endl;
+    });
     close(connfd);
 }
