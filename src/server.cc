@@ -100,6 +100,10 @@ void onMessage(std::shared_ptr<Connection> conn) {
 }
 
 int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " listenIp  listenPort" << std::endl;
+        return 1;
+    }
     tree = new BTree(1024);
     struct addrinfo hints, *servinfo, *p;
     EventLoop *loop = new EventLoop();
@@ -114,7 +118,7 @@ int main(int argc, char *argv[]) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((rv = getaddrinfo("127.0.0.1", argv[1], &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(argv[1], argv[2], &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -126,6 +130,7 @@ int main(int argc, char *argv[]) {
 
     freeaddrinfo(servinfo);
     acceptor->listen();
+    std::cout << "Server listening on " << argv[1] << ":" << argv[2] << std::endl;
     acceptor->setNewConnectionCallback([loop, tree, &connid, &connections](
                                            int connfd,
                                            struct sockaddr_storage clientAddr) {

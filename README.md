@@ -4,6 +4,21 @@ This is a simple single-threaded in-memory KV store which supports `GET`, `PUT`,
 
 The key length is fixed 8 bytes, and the value is fixed 256 bytes.
 
+The client supports 4 operations:
+
+- Get(Key)
+    - Returns the value with Status FOUND if found
+    - Returns null value with Status NOT_FOUND if not found
+- Put(Key, Value)
+    - Returns OK if success
+    - If the Key already exists, update its value
+- Delete(Key)
+    - Returns OK if success
+    - If the Key does not exists, nothing happens
+- Scan(MinKey, MaxKey, Callback)
+    - Scan key-value pairs from MinKey to MaxKey (included)
+    - For each pair scanned, invoke the callback with key-value pair as argument
+    
 ## Build
 
 The demo client will be built into `build/client` and the demo server will be built into `build/server`
@@ -18,6 +33,21 @@ Build client:
 
 ```
 make client
+```
+
+Running server:
+```
+build/server listenIp listenPort
+```
+
+Running client:
+```
+build/client serverIp serverPort
+```
+
+Running tests:
+```
+make test
 ```
 
 ## Data Structure

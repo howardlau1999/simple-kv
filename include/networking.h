@@ -65,5 +65,8 @@ bool isSelfConnect(int sockfd);
 
 int get_in_port(struct sockaddr *sa);
 void *get_in_addr(struct sockaddr *sa);
+void recv_n(int fd, char *buf, const int size);
+void send_n(int fd, const char *buf, const int size);
+int connect_to(const char *host, const char *port);
 
 #endif

@@ -5,72 +5,8 @@
 #include <iostream>
 #include <string>
 #include <functional>
-void recv_n(int fd, char *buf, const int size) {
-    int received = 0;
-    while (received < size) {
-        int chunk = recv(fd, buf, size - received, 0);
-        if (chunk == -1) {
-            perror("recv");
-            return;
-        }
-        received += chunk;
-        buf += chunk;
-    }
-}
 
-void send_n(int fd, const char *buf, const int size) {
-    int sent = 0;
-    while (sent < size) {
-        int chunk = send(fd, buf, size - sent, 0);
-        if (chunk == -1) {
-            perror("send");
-            return;
-        }
-        sent += chunk;
-        buf += chunk;
-    }
-}
-
-int connect_to(const char *host, const char *port) {
-    struct addrinfo hints, *servinfo, *p;
-    int rv, fd;
-    char s[INET6_ADDRSTRLEN];
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return 1;
-    }
-
-    for (p = servinfo; p != NULL; p = p->ai_next) {
-        if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            perror("client: socket error");
-            continue;
-        }
-
-        if (connect(fd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(fd);
-            perror("client: connect error");
-            continue;
-        }
-
-        break;
-    }
-
-    if (p == NULL) {
-        fprintf(stderr, "client: failed to connect\n");
-        exit(2);
-    }
-
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)&p->ai_addr), s,
-              sizeof s);
-    fprintf(stdout, "client: connected to %s:%s\n", s, port);
-    freeaddrinfo(servinfo);
-    return fd;
-}
-
+// Get value of key
 Status Get(int connfd, Key const &key, Value &value) {
     char getCommand[1 + KEY_LEN] = {GET};
     memcpy(getCommand + 1, &key, KEY_LEN);
@@ -85,6 +21,7 @@ Status Get(int connfd, Key const &key, Value &value) {
     }
 }
 
+// Delete one Key
 bool Delete(int connfd, Key key) {
     char deleteCommand[KEY_LEN + 1] = {DELETE};
     memcpy(deleteCommand + 1, &key, KEY_LEN);
@@ -94,6 +31,7 @@ bool Delete(int connfd, Key key) {
     return reply == OK;
 }
 
+// Put Value to Key
 bool Put(int connfd, Key key, Value value) {
     char putCommand[KV_LEN + 1] = {PUT};
     memcpy(putCommand + 1, &key, KEY_LEN);
@@ -124,7 +62,12 @@ void Scan(int connfd, Key minKey, Key maxKey, std::function<void(KeyValue kv)> c
     }
 }
 
+// Driver
 int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " serverIp serverPort" << std::endl;
+        return 1;
+    }
     int connfd = connect_to(argv[1], argv[2]);
     for (int i = 1; i < 100; ++i) {
         std::string valueStr = std::to_string(i * 10);
