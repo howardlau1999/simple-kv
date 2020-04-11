@@ -18,7 +18,7 @@ The client supports 4 operations:
 - Scan(MinKey, MaxKey, Callback)
     - Scan key-value pairs from MinKey to MaxKey (included)
     - For each pair scanned, invoke the callback with key-value pair as argument
-    
+
 ## Build
 
 The demo client will be built into `build/client` and the demo server will be built into `build/server`
@@ -54,11 +54,49 @@ make test
 
 This KV store uses B+-tree to store KV pair in leaves.
 
-## Server
+## Source Code Structure
+
+```
+.
+├── include // Header files
+│   ├── acceptor.h
+│   ├── btree.h
+│   ├── channel.h
+│   ├── client.h
+│   ├── command.h
+│   ├── connection.h
+│   ├── eventloop.h
+│   ├── networking.h
+│   ├── noncopyable.h
+│   ├── poller.h
+│   ├── server.h
+│   └── socket.h
+├── Makefile
+├── README.md
+├── src
+│   ├── acceptor.cc // Connection acceptor
+│   ├── btree.cc // B+Tree implementaions
+│   ├── channel.cc 
+│   ├── client.cc // Client driver
+│   ├── connection.cc // C++ wrapper of a TCP connection
+│   ├── eventloop.cc // Eventloop implementation
+│   ├── main.cc // BTree driver
+│   ├── networking.cc // Socket operations
+│   ├── poller.cc // Epoll poller
+│   ├── server.cc // Server driver
+│   └── socket.cc // C++ wrapper of socket
+└── tests
+    └── btree_test.cc // Google Test
+```
+
+
+## Networking
+
+### Server
 
 The server uses an `EventLoop` and `epoll` as poller to poll networking events and process them. This enables the server to process many connections at the same time.
 
-## Protocol
+### Protocol
 
 The protocol is very simple. The first byte in a message indicates the type of the message. The types include:
 
@@ -76,7 +114,7 @@ ERROR, // S->C, Something went wrong
 
 For different types of message, the length of the data followed varies. 
 
-# Possible Improvements
+## Possible Improvements
 
 1. Use multi-threading
 2. Client uses epoll as well
